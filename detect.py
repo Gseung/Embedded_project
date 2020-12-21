@@ -14,9 +14,9 @@ sensor = Adafruit_DHT.DHT11     # DHT11
 # SERVO parameter
 min_x = 100
 max_x = 500
-min_duty = 2
-max_duty = 12.5
-inclination = (max_duty-min_duty)/(max_x-min_x)
+min_pulse = 2
+max_pulse = 12.5
+inclination = (max_pulse-min_pulse)/(max_x-min_x)
 
 # GLOBAL variable
 pin_buzz = 22
@@ -26,7 +26,7 @@ count = 0
 check_human = 0
 
 freq = [523, 587, 659, 698, 784, 880, 988, 1047]    # freq list (도, 레, 미, 파, 솔, 라, 시, 도)
-list = [1, 3, 5, 1, 3, 5, 6, 6, 6, 5]               # sing
+list = [1, 3, 5, 1, 3, 5, 6, 6, 6, 5]               # Music
 
 def btn_callback(channel):
     global mode
@@ -47,7 +47,7 @@ def btn_callback(channel):
     elif(mode == 3):
         motor.ChangeDutyCycle(0)
         mode+=1
-        make_Tune(list)                 # 작은별 노래
+        make_Tune(list)                 # Twinkle little star song
 
     if(mode > 3):
         mode = 0
@@ -73,28 +73,28 @@ def sensor_thread():
     timer1=threading.Timer(600,sensor_thread)            # check temperature per 10 minutes
     timer1.start()
 
-def timer_count():
+def timer_thread():
     global count
     print("timer cnt %d" %count)
     #print(count)
     if(check_human == 0):
         count+=1
-    if(count > 30):
+    if(count > 300):                                    # Turn off after 5 minutes when human disappear
         motor.ChangeDutyCycle(0)
         mode = 3
         count = 0
-    timer2=threading.Timer(1,timer_count)               # check human per 1 second
+    timer2=threading.Timer(1,timer_thread)               # check human per 1 second
     timer2.start()
 
 
-# Invert face location to servo duty
+# Conversion face location to servo duty rate
 def location_equation(cur_x):
-    duty = -inclination*cur_x+16
-    if(duty < 4):
-        duty = 4
-    elif(duty >= 9.5):
-        duty = 9.5
-    return duty
+    duty_rate = -inclination*cur_x+16
+    if(duty_rate < 4):
+        duty_rate = 4
+    elif(duty_rate >= 9.5):
+        duty_rate = 9.5
+    return duty_rate
 
 # Sing of Twinkle Twinkle little Star
 def make_Tune(list):
@@ -114,7 +114,7 @@ if __name__ == '__main__':
     pin_servo = 4
     pin_btn = 17
     gp.setmode(gp.BCM)
-    gp.setup(pin_btn, gp.IN, pull_up_down = gp.PUD_UP)   # setup pull-up
+    gp.setup(pin_btn, gp.IN, pull_up_down = gp.PUD_DOWN)   # setup pull-down
     gp.setup(pin_motor, gp.OUT)
     gp.setup(pin_servo, gp.OUT)
     gp.setup(pin_buzz, gp.OUT)
@@ -136,7 +136,7 @@ if __name__ == '__main__':
 
     try:
         sensor_thread()
-        timer_count()
+        timer_thread()
         while True:
             check_human = 0
             ret, img = cap.read()
